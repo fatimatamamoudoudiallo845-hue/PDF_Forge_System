@@ -7,9 +7,14 @@ RUN cd web-gateway && mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
+
+# Installer orbd (inclus dans le JDK complet)
+RUN apt-get update && apt-get install -y openjdk-17-jdk && apt-get clean
+
 COPY --from=builder /app/corba-server/target/corba-server-*-jar-with-dependencies.jar corba-server.jar
 COPY --from=builder /app/web-gateway/target/web-gateway-*.jar web-gateway.jar
 COPY start.sh .
 RUN chmod +x start.sh
+
 EXPOSE 8085
 CMD ["./start.sh"]
