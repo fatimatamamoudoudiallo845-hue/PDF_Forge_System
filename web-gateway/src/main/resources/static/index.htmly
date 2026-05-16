@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Forge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #111111;
+            --accent: #e8ff47;
+            --accent2: #ff6b35;
+            --text: #f0f0f0;
+            --muted: #555;
+            --border: #222;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            position: relative;
+            z-index: 1;
+            padding: 2rem 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .logo span { color: var(--accent); }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            padding: 4rem 2rem;
+        }
+
+        .hero-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards 0.2s;
+        }
+
+        .hero-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.95;
+            text-align: center;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards 0.4s;
+        }
+
+        .hero-title .highlight {
+            color: transparent;
+            -webkit-text-stroke: 1px var(--accent);
+        }
+
+        .hero-sub {
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.7;
+            margin-bottom: 3.5rem;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards 0.6s;
+        }
+
+        .btn-generate {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--accent);
+            color: #0a0a0a;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 1.2rem 2.5rem;
+            border: none;
+            cursor: pointer;
+            clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+            transition: all 0.2s ease;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards 0.8s;
+            text-decoration: none;
+        }
+
+        .btn-generate:hover {
+            background: var(--accent2);
+            transform: translate(-3px, -3px);
+            box-shadow: 6px 6px 0 rgba(232,255,71,0.3);
+        }
+
+        .btn-generate:active {
+            transform: translate(0, 0);
+            box-shadow: none;
+        }
+
+        .btn-generate.loading {
+            background: var(--muted);
+            pointer-events: none;
+        }
+
+        .btn-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-top-color: #0a0a0a;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+        }
+
+        .btn-generate.loading .spinner { display: block; }
+        .btn-generate.loading .btn-icon { display: none; }
+        .btn-generate.loading .btn-text::after { content: '...'; }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .bracket {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            opacity: 0.15;
+        }
+
+        .bracket-tl { top: 3rem; left: 3rem; border-top: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+        .bracket-tr { top: 3rem; right: 3rem; border-top: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+        .bracket-bl { bottom: 3rem; left: 3rem; border-bottom: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+        .bracket-br { bottom: 3rem; right: 3rem; border-bottom: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--accent);
+            padding: 1rem 1.5rem;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateY(120%);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 100;
+        }
+
+        .toast.show { transform: translateY(0); }
+        .toast-icon { color: var(--accent); font-size: 1.1rem; }
+
+        footer {
+            position: relative;
+            z-index: 1;
+            padding: 1.5rem 3rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .server-info {
+            display: flex;
+            gap: 2rem;
+            margin-top: 3rem;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards 1s;
+        }
+
+        .info-item { text-align: center; }
+
+        .info-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .info-value {
+            font-size: 0.85rem;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">PDF<span>_</span>FORGE</div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            Serveur actif · port 8085
+        </div>
+    </header>
+
+    <main>
+        <div class="bracket bracket-tl"></div>
+        <div class="bracket bracket-tr"></div>
+        <div class="bracket bracket-bl"></div>
+        <div class="bracket bracket-br"></div>
+
+        <p class="hero-label">// Système de génération documentaire</p>
+
+        <h1 class="hero-title">
+            Générez<br>votre <span class="highlight">PDF</span>
+        </h1>
+
+        <p class="hero-sub">
+            Connecté à Tomcat 9 via Spring Boot.<br>
+            Cliquez pour déclencher la génération.
+        </p>
+
+        <a id="generateBtn" class="btn-generate" href="http://localhost:8085/generate-pdf" target="_blank">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+            <div class="spinner"></div>
+            <span class="btn-text">Générer PDF</span>
+        </a>
+
+        <div class="server-info">
+            <div class="info-item">
+                <div class="info-label">Serveur</div>
+                <div class="info-value">Tomcat 9</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Port</div>
+                <div class="info-value">8085</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-value">UP ↑</div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span>PDF généré avec succès !</span>
+    </div>
+
+    <footer>
+        <span>PDF Forge System</span>
+        <span>Spring Boot · OpenPDF · CORBA</span>
+    </footer>
+
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', function(e) {
+            const btn = this;
+            btn.classList.add('loading');
+
+            setTimeout(() => {
+                btn.classList.remove('loading');
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }, 1500);
+        });
+    </script>
+
+</body>
+</html>

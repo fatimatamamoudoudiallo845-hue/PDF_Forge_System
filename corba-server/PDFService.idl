@@ -1,0 +1,6 @@
+module PDFModule {
+    interface PDFProcessor {
+        string extractText(in string filePath);
+        boolean protectPDF(in string filePath, in string password);
+    };
+};

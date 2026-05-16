@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Forge System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a; --surface: #111; --surface2: #1a1a1a;
+            --accent: #e8ff47; --accent2: #ff6b35;
+            --text: #f0f0f0; --muted: #555; --border: #222;
+            --success: #4ade80; --error: #f87171;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background:var(--bg); color:var(--text);
+            font-family:'IBM Plex Mono',monospace; min-height:100vh;
+        }
+        body::before {
+            content:''; position:fixed; inset:0;
+            background-image:
+                linear-gradient(rgba(232,255,71,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(232,255,71,0.02) 1px, transparent 1px);
+            background-size:60px 60px; pointer-events:none; z-index:0;
+        }
+        header {
+            position:sticky; top:0; z-index:100;
+            padding:1.2rem 2rem;
+            display:flex; align-items:center; justify-content:space-between;
+            border-bottom:1px solid var(--border);
+            background:rgba(10,10,10,0.95); backdrop-filter:blur(10px);
+        }
+        .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.3rem; }
+        .logo span { color:var(--accent); }
+        .status-badge {
+            display:flex; align-items:center; gap:0.5rem;
+            font-size:0.7rem; color:var(--muted);
+            text-transform:uppercase; letter-spacing:0.1em;
+        }
+        .dot {
+            width:7px; height:7px; border-radius:50%;
+            background:var(--success); animation:pulse 2s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .container {
+            position:relative; z-index:1;
+            max-width:1100px; margin:0 auto; padding:3rem 2rem;
+        }
+        .hero { text-align:center; margin-bottom:3rem; }
+        .hero-label {
+            font-size:0.65rem; text-transform:uppercase;
+            letter-spacing:0.25em; color:var(--accent); margin-bottom:1rem;
+        }
+        .hero h1 {
+            font-family:'Syne',sans-serif; font-weight:800;
+            font-size:clamp(2.5rem,6vw,5rem);
+            line-height:1; letter-spacing:-0.04em; margin-bottom:1rem;
+        }
+        .hero h1 em {
+            color:transparent; -webkit-text-stroke:1px var(--accent); font-style:normal;
+        }
+        .hero p { color:var(--muted); font-size:0.82rem; line-height:1.7; }
+
+        .quick-action {
+            display:flex; align-items:center; justify-content:center;
+            gap:1rem; margin-bottom:3rem; flex-wrap:wrap;
+        }
+        .grid {
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+            gap:1.5rem;
+        }
+        .card {
+            background:var(--surface); border:1px solid var(--border);
+            padding:1.5rem; transition:border-color 0.2s, transform 0.2s;
+        }
+        .card:hover { border-color:var(--accent); transform:translateY(-2px); }
+        .card-num {
+            font-size:0.6rem; color:var(--accent);
+            text-transform:uppercase; letter-spacing:0.2em; margin-bottom:0.75rem;
+        }
+        .card h2 {
+            font-family:'Syne',sans-serif; font-weight:700;
+            font-size:1.1rem; margin-bottom:0.5rem;
+        }
+        .card p { font-size:0.78rem; color:var(--muted); line-height:1.6; margin-bottom:1.2rem; }
+
+        .form-group { margin-bottom:0.75rem; }
+        label {
+            display:block; font-size:0.65rem; color:var(--muted);
+            text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.3rem;
+        }
+        input[type="text"],input[type="number"],input[type="password"],textarea {
+            width:100%; background:var(--surface2);
+            border:1px solid var(--border); color:var(--text);
+            font-family:'IBM Plex Mono',monospace; font-size:0.8rem;
+            padding:0.6rem 0.8rem; outline:none; transition:border-color 0.2s;
+        }
+        input:focus,textarea:focus { border-color:var(--accent); }
+        textarea { resize:vertical; min-height:80px; }
+        input[type="file"] {
+            width:100%; background:var(--surface2);
+            border:1px dashed var(--border); color:var(--muted);
+            font-family:'IBM Plex Mono',monospace; font-size:0.75rem;
+            padding:0.8rem; cursor:pointer;
+        }
+        input[type="file"]:hover { border-color:var(--accent); }
+
+        .btn {
+            display:inline-flex; align-items:center; justify-content:center;
+            gap:0.5rem; background:var(--accent); color:#0a0a0a;
+            font-family:'Syne',sans-serif; font-weight:700;
+            font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;
+            padding:0.75rem 1.5rem; border:none; cursor:pointer; width:100%;
+            clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+            transition:all 0.2s; text-decoration:none;
+        }
+        .btn:hover { background:var(--accent2); transform:translateY(-2px); }
+        .btn:active { transform:translateY(0); }
+        .btn-outline {
+            background:transparent; color:var(--accent);
+            border:1px solid var(--accent); clip-path:none;
+        }
+        .btn-outline:hover { background:var(--accent); color:#0a0a0a; }
+
+        .result {
+            margin-top:1rem; padding:0.75rem;
+            background:var(--surface2); border-left:2px solid var(--accent);
+            font-size:0.75rem; white-space:pre-wrap; display:none;
+        }
+        .result.show { display:block; }
+        .result.error { border-color:var(--error); color:var(--error); }
+        .result.success { border-color:var(--success); color:var(--success); }
+
+        .toast {
+            position:fixed; bottom:2rem; right:2rem;
+            background:var(--surface); border:1px solid var(--accent);
+            padding:0.8rem 1.2rem; font-size:0.75rem;
+            display:flex; align-items:center; gap:0.5rem;
+            transform:translateY(120%);
+            transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            z-index:200;
+        }
+        .toast.show { transform:translateY(0); }
+
+        footer {
+            position:relative; z-index:1;
+            padding:1.5rem 2rem; margin-top:4rem;
+            border-top:1px solid var(--border);
+            display:flex; justify-content:space-between;
+            font-size:0.65rem; color:var(--muted);
+            text-transform:uppercase; letter-spacing:0.1em;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">PDF<span>_</span>FORGE</div>
+    <div class="status-badge">
+        <div class="dot"></div>
+        <span id="statusText">Vérification...</span>
+    </div>
+</header>
+
+<div class="container">
+
+    <div class="hero">
+        <p class="hero-label">// Système de traitement documentaire CORBA</p>
+        <h1>PDF <em>Forge</em><br>System</h1>
+        <p>Web Gateway (Spring Boot :8085) → Serveur CORBA 1.8 → Apache PDFBox</p>
+    </div>
+
+    <div class="quick-action">
+        <a href="/api/pdf/generate-pdf" target="_blank"
+           class="btn" style="width:auto; clip-path:none;">
+            ↓ Générer PDF démo
+        </a>
+        <button class="btn btn-outline" style="width:auto"
+                onclick="checkStatus()">⟳ Statut serveur</button>
+    </div>
+
+    <div class="grid">
+
+        <!-- 01 Créer PDF -->
+        <div class="card">
+            <div class="card-num">// 01</div>
+            <h2>Créer un PDF</h2>
+            <p>Génère un PDF à partir d'un titre, contenu et auteur.</p>
+            <div class="form-group">
+                <label>Titre</label>
+                <input type="text" id="createTitle" placeholder="Mon document">
+            </div>
+            <div class="form-group">
+                <label>Auteur</label>
+                <input type="text" id="createAuthor" placeholder="Nom de l'auteur">
+            </div>
+            <div class="form-group">
+                <label>Contenu</label>
+                <textarea id="createContent" placeholder="Contenu du PDF..."></textarea>
+            </div>
+            <button class="btn" onclick="createPDF()">Créer PDF</button>
+            <div class="result" id="createResult"></div>
+        </div>
+
+        <!-- 02 Fusionner -->
+        <div class="card">
+            <div class="card-num">// 02</div>
+            <h2>Fusionner des PDF</h2>
+            <p>Combine plusieurs fichiers PDF en un seul document.</p>
+            <div class="form-group">
+                <label>Fichiers PDF (plusieurs)</label>
+                <input type="file" id="mergeFiles" accept=".pdf" multiple>
+            </div>
+            <button class="btn" onclick="mergePDFs()">Fusionner</button>
+            <div class="result" id="mergeResult"></div>
+        </div>
+
+        <!-- 03 Extraire texte -->
+        <div class="card">
+            <div class="card-num">// 03</div>
+            <h2>Extraire le texte</h2>
+            <p>Extrait tout le contenu textuel d'un PDF.</p>
+            <div class="form-group">
+                <label>Fichier PDF</label>
+                <input type="file" id="extractTextFile" accept=".pdf">
+            </div>
+            <button class="btn" onclick="extractText()">Extraire texte</button>
+            <div class="result" id="extractTextResult"></div>
+        </div>
+
+        <!-- 04 Extraire pages -->
+        <div class="card">
+            <div class="card-num">// 04</div>
+            <h2>Extraire des pages</h2>
+            <p>Extrait des pages spécifiques d'un PDF.</p>
+            <div class="form-group">
+                <label>Fichier PDF</label>
+                <input type="file" id="extractPagesFile" accept=".pdf">
+            </div>
+            <div class="form-group">
+                <label>Pages (ex: 1,3,5)</label>
+                <input type="text" id="extractPagesNums" placeholder="1,2,3">
+            </div>
+            <button class="btn" onclick="extractPages()">Extraire pages</button>
+            <div class="result" id="extractPagesResult"></div>
+        </div>
+
+        <!-- 05 Supprimer pages -->
+        <div class="card">
+            <div class="card-num">// 05</div>
+            <h2>Supprimer des pages</h2>
+            <p>Supprime des pages spécifiques d'un PDF.</p>
+            <div class="form-group">
+                <label>Fichier PDF</label>
+                <input type="file" id="deletePagesFile" accept=".pdf">
+            </div>
+            <div class="form-group">
+                <label>Pages à supprimer (ex: 2,4)</label>
+                <input type="text" id="deletePagesNums" placeholder="2,4">
+            </div>
+            <button class="btn" onclick="deletePages()">Supprimer pages</button>
+            <div class="result" id="deletePagesResult"></div>
+        </div>
+
+        <!-- 06 Mot de passe -->
+        <div class="card">
+            <div class="card-num">// 06</div>
+            <h2>Protéger par mot de passe</h2>
+            <p>Chiffre un PDF avec un mot de passe utilisateur.</p>
+            <div class="form-group">
+                <label>Fichier PDF</label>
+                <input type="file" id="passwordFile" accept=".pdf">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe propriétaire</label>
+                <input type="password" id="ownerPwd" placeholder="owner123">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe utilisateur</label>
+                <input type="password" id="userPwd" placeholder="user123">
+            </div>
+            <button class="btn" onclick="addPassword()">Protéger</button>
+            <div class="result" id="passwordResult"></div>
+        </div>
+
+        <!-- 07 Convertir en images -->
+        <div class="card">
+            <div class="card-num">// 07</div>
+            <h2>Convertir en images</h2>
+            <p>Convertit chaque page du PDF en image PNG.</p>
+            <div class="form-group">
+                <label>Fichier PDF</label>
+                <input type="file" id="convertFile" accept=".pdf">
+            </div>
+            <div class="form-group">
+                <label>DPI (72 à 300)</label>
+                <input type="number" id="convertDpi" value="150" min="72" max="300">
+            </div>
+            <button class="btn" onclick="convertToImages()">Convertir</button>
+            <div class="result" id="convertResult"></div>
+        </div>
+
+    </div>
+</div>
+
+<div class="toast" id="toast">
+    <span id="toastIcon">✓</span>
+    <span id="toastMsg">Opération réussie</span>
+</div>
+
+<footer>
+    <span>PDF Forge System · 2026</span>
+    <span>Spring Boot · CORBA 1.8 · PDFBox · OpenPDF</span>
+</footer>
+
+<script>
+const BASE = '/api/pdf';
+
+async function checkStatus() {
+    try {
+        const r = await fetch(BASE + '/status');
+        const d = await r.json();
+        document.getElementById('statusText').textContent =
+            `Gateway ${d.gateway} · CORBA ${d.corba}`;
+        showToast('✓', `CORBA : ${d.corba}`, false);
+    } catch {
+        document.getElementById('statusText').textContent = 'Erreur connexion';
+        showToast('✗', 'Serveur inaccessible', true);
+    }
+}
+
+async function createPDF() {
+    const title   = document.getElementById('createTitle').value   || 'Sans titre';
+    const author  = document.getElementById('createAuthor').value  || 'Anonyme';
+    const content = document.getElementById('createContent').value || '(vide)';
+    const params  = new URLSearchParams({ title, author, content });
+    await download(`${BASE}/create?${params}`, 'POST', null, 'createResult', `${title}.pdf`);
+}
+
+async function mergePDFs() {
+    const files = document.getElementById('mergeFiles').files;
+    if (!files.length) { showResult('mergeResult', 'Sélectionnez au moins 2 fichiers', true); return; }
+    const form = new FormData();
+    for (const f of files) form.append('files', f);
+    await download(`${BASE}/merge`, 'POST', form, 'mergeResult', 'merged.pdf');
+}
+
+async function extractText() {
+    const file = document.getElementById('extractTextFile').files[0];
+    if (!file) { showResult('extractTextResult', 'Sélectionnez un fichier', true); return; }
+    const form = new FormData();
+    form.append('file', file);
+    try {
+        showResult('extractTextResult', 'Extraction en cours...', false);
+        const r = await fetch(`${BASE}/extract-text`, { method:'POST', body:form });
+        const d = await r.json();
+        showResult('extractTextResult',
+            `✓ ${d.characters} caractères extraits :\n\n${d.text.substring(0,400)}...`, false);
+    } catch (e) {
+        showResult('extractTextResult', '✗ ' + e.message, true);
+    }
+}
+
+async function extractPages() {
+    const file  = document.getElementById('extractPagesFile').files[0];
+    const pages = document.getElementById('extractPagesNums').value;
+    if (!file || !pages) { showResult('extractPagesResult', 'Fichier et pages requis', true); return; }
+    const params = new URLSearchParams();
+    pages.split(',').forEach(p => params.append('pages', p.trim()));
+    const form = new FormData();
+    form.append('file', file);
+    await download(`${BASE}/extract-pages?${params}`, 'POST', form, 'extractPagesResult', 'extracted.pdf');
+}
+
+async function deletePages() {
+    const file  = document.getElementById('deletePagesFile').files[0];
+    const pages = document.getElementById('deletePagesNums').value;
+    if (!file || !pages) { showResult('deletePagesResult', 'Fichier et pages requis', true); return; }
+    const params = new URLSearchParams();
+    pages.split(',').forEach(p => params.append('pages', p.trim()));
+    const form = new FormData();
+    form.append('file', file);
+    await download(`${BASE}/delete-pages?${params}`, 'POST', form, 'deletePagesResult', 'modified.pdf');
+}
+
+async function addPassword() {
+    const file  = document.getElementById('passwordFile').files[0];
+    const owner = document.getElementById('ownerPwd').value;
+    const user  = document.getElementById('userPwd').value;
+    if (!file || !owner || !user) { showResult('passwordResult', 'Tous les champs requis', true); return; }
+    const params = new URLSearchParams({ ownerPassword: owner, userPassword: user });
+    const form = new FormData();
+    form.append('file', file);
+    await download(`${BASE}/add-password?${params}`, 'POST', form, 'passwordResult', 'protected.pdf');
+}
+
+async function convertToImages() {
+    const file = document.getElementById('convertFile').files[0];
+    const dpi  = document.getElementById('convertDpi').value || 150;
+    if (!file) { showResult('convertResult', 'Sélectionnez un fichier', true); return; }
+    const params = new URLSearchParams({ format:'PNG', dpi });
+    const form = new FormData();
+    form.append('file', file);
+    try {
+        showResult('convertResult', 'Conversion en cours...', false);
+        const r = await fetch(`${BASE}/convert-to-images?${params}`, { method:'POST', body:form });
+        const images = await r.json();
+        showResult('convertResult', `✓ ${images.length} image(s) générée(s) en Base64`, false);
+        showToast('✓', images.length + ' images générées', false);
+    } catch (e) {
+        showResult('convertResult', '✗ ' + e.message, true);
+    }
+}
+
+async function download(url, method, body, resultId, filename) {
+    showResult(resultId, 'Traitement en cours...', false);
+    try {
+        const r = await fetch(url, { method, body });
+        if (!r.ok) throw new Error('Erreur serveur : ' + r.status);
+        const blob = await r.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        showResult(resultId, '✓ Téléchargement : ' + filename, false);
+        showToast('✓', filename + ' prêt', false);
+    } catch (e) {
+        showResult(resultId, '✗ ' + e.message, true);
+        showToast('✗', e.message, true);
+    }
+}
+
+function showResult(id, msg, isError) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'result show ' + (isError ? 'error' : 'success');
+}
+
+function showToast(icon, msg, isError) {
+    document.getElementById('toastIcon').textContent = icon;
+    document.getElementById('toastMsg').textContent  = msg;
+    const t = document.getElementById('toast');
+    t.style.borderColor = isError ? 'var(--error)' : 'var(--accent)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+checkStatus();
+</script>
+</body>
+</html>
