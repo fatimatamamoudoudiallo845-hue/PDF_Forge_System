@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -66,6 +67,9 @@ public class PdfController {
     @PostMapping("/merge")
     public ResponseEntity<byte[]> mergePDFs(
             @RequestParam("files") MultipartFile[] files) throws Exception {
+        if (files == null || files.length < 2) {
+            throw new RuntimeException("Au moins 2 fichiers requis");
+        }
         byte[][] pdfFiles = new byte[files.length][];
         for (int i = 0; i < files.length; i++) {
             pdfFiles[i] = files[i].getBytes();
@@ -91,7 +95,11 @@ public class PdfController {
     @PostMapping("/extract-pages")
     public ResponseEntity<byte[]> extractPages(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("pages") int[] pages) throws Exception {
+            @RequestParam("pages") String pagesStr) throws Exception {
+        int[] pages = Arrays.stream(pagesStr.split(","))
+            .map(String::trim)
+            .mapToInt(Integer::parseInt)
+            .toArray();
         byte[] result = pdfService.extractPages(file.getBytes(), pages);
         return pdfResponse(result, "extracted.pdf");
     }
@@ -100,7 +108,11 @@ public class PdfController {
     @PostMapping("/delete-pages")
     public ResponseEntity<byte[]> deletePages(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("pages") int[] pages) throws Exception {
+            @RequestParam("pages") String pagesStr) throws Exception {
+        int[] pages = Arrays.stream(pagesStr.split(","))
+            .map(String::trim)
+            .mapToInt(Integer::parseInt)
+            .toArray();
         byte[] result = pdfService.deletePages(file.getBytes(), pages);
         return pdfResponse(result, "modified.pdf");
     }
