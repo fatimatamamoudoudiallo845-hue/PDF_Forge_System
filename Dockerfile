@@ -1,15 +1,17 @@
 FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
-COPY corba-server/ ./corba-server/
-COPY web-gateway/ ./web-gateway/
-RUN cd corba-server && mvn clean package -DskipTests
-RUN cd web-gateway && mvn clean package -DskipTests
 
-FROM eclipse-temurin:17-jre-jammy
+# Copier et compiler corba-server
+COPY corba-server/ corba-server/
+RUN cd corba-server && mvn package -DskipTests -q
+
+# Copier et compiler web-gateway
+COPY web-gateway/ web-gateway/
+RUN cd web-gateway && mvn package -DskipTests -q
+
+# ── Image finale ──
+FROM eclipse-temurin:17-jre-slim
 WORKDIR /app
-
-# Installer orbd (inclus dans le JDK complet)
-RUN apt-get update && apt-get install -y openjdk-17-jdk && apt-get clean
 
 COPY --from=builder /app/corba-server/target/corba-server-*-jar-with-dependencies.jar corba-server.jar
 COPY --from=builder /app/web-gateway/target/web-gateway-*.jar web-gateway.jar
