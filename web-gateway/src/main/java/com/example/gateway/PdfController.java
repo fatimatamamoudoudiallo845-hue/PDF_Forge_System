@@ -17,17 +17,55 @@ public class PdfController {
     @Autowired
     private PdfService pdfService;
 
-    @GetMapping("/ping")
-    public ResponseEntity<Map<String, Object>> ping() {
+    // ── Statut ────────────────────────────────────────────────
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> status() {
         Map<String, Object> response = new HashMap<>();
-        boolean ok = pdfService.ping();
-        response.put("status", ok ? "OK" : "CORBA non disponible");
-        response.put("corba", ok);
+        try {
+            boolean ok = pdfService.ping();
+            response.put("gateway", ok ? "OK" : "DÉGRADÉ");
+            response.put("corba", ok ? "CONNECTÉ" : "DÉCONNECTÉ");
+            response.put("status", ok ? "healthy" : "degraded");
+        } catch (Exception e) {
+            response.put("gateway", "ERREUR");
+            response.put("corba", "ERREUR");
+            response.put("status", "down");
+            response.put("error", e.getMessage());
+        }
         return ResponseEntity.ok(response);
     }
 
+    // ── Ping ──────────────────────────────────────────────────
+    @GetMapping("/ping")
+    public ResponseEntity<Map<String, Object>> ping() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            boolean ok = pdfService.ping();
+            response.put("status", ok ? "OK" : "CORBA non disponible");
+            response.put("corba", ok);
+        } catch (Exception e) {
+            response.put("status", "ERREUR");
+            response.put("corba", false);
+            response.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    // ── Créer PDF ─────────────────────────────────────────────
+    @PostMapping("/create")
+    public ResponseEntity<byte[]> createPDF(
+            @RequestParam("title") String title,
+            @RequestParam("content") String content,
+            @RequestParam(value = "author", defaultValue = "PDF Forge") String author)
+            throws Exception {
+        byte[] result = pdfService.createPDF(title, content, author);
+        return pdfResponse(result, title + ".pdf");
+    }
+
+    // ── Fusionner ─────────────────────────────────────────────
     @PostMapping("/merge")
-    public ResponseEntity<byte[]> mergePDFs(@RequestParam("files") MultipartFile[] files) throws Exception {
+    public ResponseEntity<byte[]> mergePDFs(
+            @RequestParam("files") MultipartFile[] files) throws Exception {
         byte[][] pdfFiles = new byte[files.length][];
         for (int i = 0; i < files.length; i++) {
             pdfFiles[i] = files[i].getBytes();
@@ -36,10 +74,12 @@ public class PdfController {
         return pdfResponse(result, "merged.pdf");
     }
 
+    // ── Découper ──────────────────────────────────────────────
     @PostMapping("/split")
     public ResponseEntity<Map<String, Object>> splitPDF(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "pagesPerChunk", defaultValue = "1") int pagesPerChunk) throws Exception {
+            @RequestParam(value = "pagesPerChunk", defaultValue = "1") int pagesPerChunk)
+            throws Exception {
         byte[][] parts = pdfService.splitPDF(file.getBytes(), pagesPerChunk);
         Map<String, Object> response = new HashMap<>();
         response.put("parts", parts.length);
@@ -47,6 +87,7 @@ public class PdfController {
         return ResponseEntity.ok(response);
     }
 
+    // ── Extraire pages ────────────────────────────────────────
     @PostMapping("/extract-pages")
     public ResponseEntity<byte[]> extractPages(
             @RequestParam("file") MultipartFile file,
@@ -55,6 +96,7 @@ public class PdfController {
         return pdfResponse(result, "extracted.pdf");
     }
 
+    // ── Supprimer pages ───────────────────────────────────────
     @PostMapping("/delete-pages")
     public ResponseEntity<byte[]> deletePages(
             @RequestParam("file") MultipartFile file,
@@ -63,15 +105,17 @@ public class PdfController {
         return pdfResponse(result, "modified.pdf");
     }
 
+    // ── Mot de passe ──────────────────────────────────────────
     @PostMapping("/add-password")
     public ResponseEntity<byte[]> addPassword(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("ownerPwd") String ownerPwd,
-            @RequestParam("userPwd") String userPwd) throws Exception {
+            @RequestParam("ownerPassword") String ownerPwd,
+            @RequestParam("userPassword") String userPwd) throws Exception {
         byte[] result = pdfService.addPassword(file.getBytes(), ownerPwd, userPwd);
         return pdfResponse(result, "protected.pdf");
     }
 
+    // ── Convertir en images ───────────────────────────────────
     @PostMapping("/convert-to-images")
     public ResponseEntity<Map<String, Object>> convertToImages(
             @RequestParam("file") MultipartFile file,
@@ -84,24 +128,18 @@ public class PdfController {
         return ResponseEntity.ok(response);
     }
 
+    // ── Extraire texte ────────────────────────────────────────
     @PostMapping("/extract-text")
     public ResponseEntity<Map<String, Object>> extractText(
             @RequestParam("file") MultipartFile file) throws Exception {
         String text = pdfService.extractText(file.getBytes());
         Map<String, Object> response = new HashMap<>();
         response.put("text", text);
+        response.put("characters", text.length());
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<byte[]> createPDF(
-            @RequestParam("title") String title,
-            @RequestParam("content") String content,
-            @RequestParam(value = "author", defaultValue = "PDF Forge") String author) throws Exception {
-        byte[] result = pdfService.createPDF(title, content, author);
-        return pdfResponse(result, "created.pdf");
-    }
-
+    // ── Nombre de pages ───────────────────────────────────────
     @PostMapping("/page-count")
     public ResponseEntity<Map<String, Object>> getPageCount(
             @RequestParam("file") MultipartFile file) throws Exception {
@@ -111,6 +149,7 @@ public class PdfController {
         return ResponseEntity.ok(response);
     }
 
+    // ── Utilitaire ────────────────────────────────────────────
     private ResponseEntity<byte[]> pdfResponse(byte[] data, String filename) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
