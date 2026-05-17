@@ -14,7 +14,7 @@ echo "✓ Java OK"
 
 # ── Démarrer orbd ───────────────────────────────────────
 echo "[1] Démarrage orbd (port 1050)..."
-orbd -ORBInitialPort 1050 &
+/usr/lib/jvm/java-1.8.0-amazon-corretto/bin/orbd -ORBInitialPort 1050 &
 ORBD_PID=$!
 sleep 3
 
