@@ -1,16 +1,17 @@
+# ── Étape 1 : Compilation ──────────────────────────────────
 FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
 
-# Copier et compiler corba-server
+# Compiler corba-server
 COPY corba-server/ corba-server/
 RUN cd corba-server && mvn package -DskipTests -q
 
-# Copier et compiler web-gateway
+# Compiler web-gateway
 COPY web-gateway/ web-gateway/
 RUN cd web-gateway && mvn package -DskipTests -q
 
-# ── Image finale ──
-FROM eclipse-temurin:17-jre-slim
+# ── Étape 2 : Image finale ─────────────────────────────────
+FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 COPY --from=builder /app/corba-server/target/corba-server-*-jar-with-dependencies.jar corba-server.jar
