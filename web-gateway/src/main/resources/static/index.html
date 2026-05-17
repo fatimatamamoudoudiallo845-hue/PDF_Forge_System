@@ -44,7 +44,6 @@
         }
         .dot.error { background:var(--error); animation:none; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
         .container {
             position:relative; z-index:1;
             max-width:1100px; margin:0 auto; padding:3rem 2rem;
@@ -63,7 +62,6 @@
             color:transparent; -webkit-text-stroke:1px var(--accent); font-style:normal;
         }
         .hero p { color:var(--muted); font-size:0.82rem; line-height:1.7; }
-
         .quick-action {
             display:flex; align-items:center; justify-content:center;
             gap:1rem; margin-bottom:3rem; flex-wrap:wrap;
@@ -87,7 +85,6 @@
             font-size:1.1rem; margin-bottom:0.5rem;
         }
         .card p { font-size:0.78rem; color:var(--muted); line-height:1.6; margin-bottom:1.2rem; }
-
         .form-group { margin-bottom:0.75rem; }
         label {
             display:block; font-size:0.65rem; color:var(--muted);
@@ -108,7 +105,6 @@
             padding:0.8rem; cursor:pointer;
         }
         input[type="file"]:hover { border-color:var(--accent); }
-
         .btn {
             display:inline-flex; align-items:center; justify-content:center;
             gap:0.5rem; background:var(--accent); color:#0a0a0a;
@@ -125,7 +121,6 @@
             border:1px solid var(--accent); clip-path:none;
         }
         .btn-outline:hover { background:var(--accent); color:#0a0a0a; }
-
         .result {
             margin-top:1rem; padding:0.75rem;
             background:var(--surface2); border-left:2px solid var(--accent);
@@ -134,7 +129,6 @@
         .result.show { display:block; }
         .result.error { border-color:var(--error); color:var(--error); }
         .result.success { border-color:var(--success); color:var(--success); }
-
         .toast {
             position:fixed; bottom:2rem; right:2rem;
             background:var(--surface); border:1px solid var(--accent);
@@ -145,7 +139,6 @@
             z-index:200;
         }
         .toast.show { transform:translateY(0); }
-
         footer {
             position:relative; z-index:1;
             padding:1.5rem 2rem; margin-top:4rem;
@@ -167,7 +160,6 @@
 </header>
 
 <div class="container">
-
     <div class="hero">
         <p class="hero-label">// Système de traitement documentaire CORBA</p>
         <h1>PDF <em>Forge</em><br>System</h1>
@@ -344,7 +336,10 @@ async function createPDF() {
 
 async function mergePDFs() {
     const files = document.getElementById('mergeFiles').files;
-    if (!files.length) { showResult('mergeResult', 'Sélectionnez au moins 2 fichiers', true); return; }
+    if (files.length < 2) {
+        showResult('mergeResult', 'Sélectionnez au moins 2 fichiers PDF', true);
+        return;
+    }
     const form = new FormData();
     for (const f of files) form.append('files', f);
     await download(`${BASE}/merge`, 'POST', form, 'mergeResult', 'merged.pdf');
@@ -369,10 +364,13 @@ async function extractText() {
 
 async function extractPages() {
     const file  = document.getElementById('extractPagesFile').files[0];
-    const pages = document.getElementById('extractPagesNums').value;
-    if (!file || !pages) { showResult('extractPagesResult', 'Fichier et pages requis', true); return; }
+    const pages = document.getElementById('extractPagesNums').value.trim();
+    if (!file || !pages) {
+        showResult('extractPagesResult', 'Fichier et pages requis', true);
+        return;
+    }
     const params = new URLSearchParams();
-    pages.split(',').forEach(p => params.append('pages', p.trim()));
+    params.append('pages', pages); // envoie "1,2,3" comme un seul string
     const form = new FormData();
     form.append('file', file);
     await download(`${BASE}/extract-pages?${params}`, 'POST', form, 'extractPagesResult', 'extracted.pdf');
@@ -380,10 +378,13 @@ async function extractPages() {
 
 async function deletePages() {
     const file  = document.getElementById('deletePagesFile').files[0];
-    const pages = document.getElementById('deletePagesNums').value;
-    if (!file || !pages) { showResult('deletePagesResult', 'Fichier et pages requis', true); return; }
+    const pages = document.getElementById('deletePagesNums').value.trim();
+    if (!file || !pages) {
+        showResult('deletePagesResult', 'Fichier et pages requis', true);
+        return;
+    }
     const params = new URLSearchParams();
-    pages.split(',').forEach(p => params.append('pages', p.trim()));
+    params.append('pages', pages); // envoie "2,4" comme un seul string
     const form = new FormData();
     form.append('file', file);
     await download(`${BASE}/delete-pages?${params}`, 'POST', form, 'deletePagesResult', 'modified.pdf');
@@ -393,7 +394,10 @@ async function addPassword() {
     const file  = document.getElementById('passwordFile').files[0];
     const owner = document.getElementById('ownerPwd').value;
     const user  = document.getElementById('userPwd').value;
-    if (!file || !owner || !user) { showResult('passwordResult', 'Tous les champs requis', true); return; }
+    if (!file || !owner || !user) {
+        showResult('passwordResult', 'Tous les champs requis', true);
+        return;
+    }
     const params = new URLSearchParams({ ownerPassword: owner, userPassword: user });
     const form = new FormData();
     form.append('file', file);
@@ -452,9 +456,7 @@ function showToast(icon, msg, isError) {
     setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// Vérification automatique au chargement
 checkStatus();
-// Revérification toutes les 30 secondes
 setInterval(checkStatus, 30000);
 </script>
 </body>
