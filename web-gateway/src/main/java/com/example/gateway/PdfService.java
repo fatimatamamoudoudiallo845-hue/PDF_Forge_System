@@ -3,8 +3,12 @@ package com.example.gateway;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -17,7 +21,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class PdfService {
@@ -47,42 +53,35 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.createPDF(title, content, author);
         } catch (Exception e) {
-            // Fallback local avec PDFBox
-            try (PDDocument doc = new PDDocument()) {
-                org.apache.pdfbox.pdmodel.PDPage page =
-                    new org.apache.pdfbox.pdmodel.PDPage();
+            PDDocument doc = new PDDocument();
+            try {
+                PDPage page = new PDPage(PDRectangle.A4);
                 doc.addPage(page);
 
-                org.apache.pdfbox.pdmodel.font.PDType1Font font =
-                    org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA_BOLD;
-                org.apache.pdfbox.pdmodel.font.PDType1Font fontNormal =
-                    org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA;
-
-                try (org.apache.pdfbox.pdmodel.PDPageContentStream cs =
-                         new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, page)) {
-
+                PDPageContentStream cs = new PDPageContentStream(doc, page);
+                try {
                     // Titre
                     cs.beginText();
-                    cs.setFont(font, 20);
+                    cs.setFont(PDType1Font.HELVETICA_BOLD, 20);
                     cs.newLineAtOffset(50, 750);
-                    cs.showText(title != null ? title : "");
+                    cs.showText(sanitize(title));
                     cs.endText();
 
                     // Auteur
                     cs.beginText();
-                    cs.setFont(fontNormal, 12);
+                    cs.setFont(PDType1Font.HELVETICA, 12);
                     cs.newLineAtOffset(50, 720);
-                    cs.showText("Auteur : " + (author != null ? author : "PDF Forge"));
+                    cs.showText("Auteur : " + sanitize(author != null ? author : "PDF Forge"));
                     cs.endText();
 
-                    // Contenu (découpage en lignes de 80 chars)
+                    // Contenu (découpage en lignes)
                     if (content != null && !content.isEmpty()) {
-                        cs.setFont(fontNormal, 11);
-                        String[] words = content.split(" ");
+                        cs.setFont(PDType1Font.HELVETICA, 11);
+                        String[] words = sanitize(content).split(" ");
                         StringBuilder line = new StringBuilder();
                         float y = 690;
                         for (String word : words) {
-                            if (line.length() + word.length() > 80) {
+                            if (line.length() + word.length() > 85) {
                                 cs.beginText();
                                 cs.newLineAtOffset(50, y);
                                 cs.showText(line.toString().trim());
@@ -100,18 +99,19 @@ public class PdfService {
                             cs.endText();
                         }
                     }
+                } finally {
+                    cs.close();
                 }
 
-                // Métadonnées
-                org.apache.pdfbox.pdmodel.PDDocumentInformation info =
-                    doc.getDocumentInformation();
-                info.setTitle(title);
-                info.setAuthor(author);
-                info.setCreator("PDF_Forge_System");
+                doc.getDocumentInformation().setTitle(title);
+                doc.getDocumentInformation().setAuthor(author);
+                doc.getDocumentInformation().setCreator("PDF_Forge_System");
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 doc.save(out);
                 return out.toByteArray();
+            } finally {
+                doc.close();
             }
         }
     }
@@ -122,7 +122,6 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.mergePDFs(pdfFiles);
         } catch (Exception e) {
-            // Fallback local PDFBox
             PDFMergerUtility merger = new PDFMergerUtility();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             merger.setDestinationStream(out);
@@ -140,8 +139,8 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.splitPDF(pdfFile, pagesPerChunk);
         } catch (Exception e) {
-            // Fallback local PDFBox
-            try (PDDocument doc = PDDocument.load(pdfFile)) {
+            PDDocument doc = PDDocument.load(pdfFile);
+            try {
                 Splitter splitter = new Splitter();
                 splitter.setSplitAtPage(pagesPerChunk);
                 List<PDDocument> parts = splitter.split(doc);
@@ -153,6 +152,8 @@ public class PdfService {
                     result[i] = out.toByteArray();
                 }
                 return result;
+            } finally {
+                doc.close();
             }
         }
     }
@@ -163,11 +164,11 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.extractPages(pdfFile, pages);
         } catch (Exception e) {
-            // Fallback local PDFBox
-            try (PDDocument source = PDDocument.load(pdfFile);
-                 PDDocument result = new PDDocument()) {
+            PDDocument source = PDDocument.load(pdfFile);
+            PDDocument result = new PDDocument();
+            try {
                 for (int page : pages) {
-                    int idx = page - 1; // pages 1-indexées → 0-indexées
+                    int idx = page - 1; // 1-indexé → 0-indexé
                     if (idx >= 0 && idx < source.getNumberOfPages()) {
                         result.addPage(source.getPage(idx));
                     }
@@ -175,6 +176,9 @@ public class PdfService {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 result.save(out);
                 return out.toByteArray();
+            } finally {
+                result.close();
+                source.close();
             }
         }
     }
@@ -185,12 +189,10 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.deletePages(pdfFile, pages);
         } catch (Exception e) {
-            // Fallback local PDFBox
-            try (PDDocument source = PDDocument.load(pdfFile);
-                 PDDocument result = new PDDocument()) {
-
-                // Construire un Set des pages à supprimer (1-indexé)
-                java.util.Set<Integer> toDelete = new java.util.HashSet<>();
+            PDDocument source = PDDocument.load(pdfFile);
+            PDDocument result = new PDDocument();
+            try {
+                Set<Integer> toDelete = new HashSet<>();
                 for (int p : pages) toDelete.add(p);
 
                 for (int i = 1; i <= source.getNumberOfPages(); i++) {
@@ -201,6 +203,9 @@ public class PdfService {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 result.save(out);
                 return out.toByteArray();
+            } finally {
+                result.close();
+                source.close();
             }
         }
     }
@@ -211,8 +216,8 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.addPassword(pdfFile, ownerPwd, userPwd);
         } catch (Exception e) {
-            // Fallback local PDFBox
-            try (PDDocument doc = PDDocument.load(pdfFile)) {
+            PDDocument doc = PDDocument.load(pdfFile);
+            try {
                 AccessPermission ap = new AccessPermission();
                 StandardProtectionPolicy policy =
                     new StandardProtectionPolicy(ownerPwd, userPwd, ap);
@@ -221,6 +226,8 @@ public class PdfService {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 doc.save(out);
                 return out.toByteArray();
+            } finally {
+                doc.close();
             }
         }
     }
@@ -231,18 +238,19 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.convertToImages(pdfFile, format, dpi);
         } catch (Exception e) {
-            // Fallback local PDFBox
-            try (PDDocument doc = PDDocument.load(pdfFile)) {
+            PDDocument doc = PDDocument.load(pdfFile);
+            try {
                 PDFRenderer renderer = new PDFRenderer(doc);
                 List<String> images = new ArrayList<>();
                 for (int i = 0; i < doc.getNumberOfPages(); i++) {
-                    BufferedImage img = renderer.renderImageWithDPI(
-                        i, dpi, ImageType.RGB);
+                    BufferedImage img = renderer.renderImageWithDPI(i, dpi, ImageType.RGB);
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     ImageIOUtil.writeImage(img, format.toLowerCase(), out, dpi);
                     images.add(Base64.getEncoder().encodeToString(out.toByteArray()));
                 }
                 return images.toArray(new String[0]);
+            } finally {
+                doc.close();
             }
         }
     }
@@ -253,10 +261,12 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.extractText(pdfFile);
         } catch (Exception e) {
-            // Fallback local PDFBox
-            try (PDDocument doc = PDDocument.load(pdfFile)) {
+            PDDocument doc = PDDocument.load(pdfFile);
+            try {
                 PDFTextStripper stripper = new PDFTextStripper();
                 return stripper.getText(doc);
+            } finally {
+                doc.close();
             }
         }
     }
@@ -267,10 +277,18 @@ public class PdfService {
             checkAvailable();
             return pdfProcessor.getPageCount(pdfFile);
         } catch (Exception e) {
-            // Fallback local PDFBox
-            try (PDDocument doc = PDDocument.load(pdfFile)) {
+            PDDocument doc = PDDocument.load(pdfFile);
+            try {
                 return doc.getNumberOfPages();
+            } finally {
+                doc.close();
             }
         }
+    }
+
+    // ── Nettoyer les caractères non-latin (PDFBox 2.x) ────────
+    private String sanitize(String text) {
+        if (text == null) return "";
+        return text.replaceAll("[^\\x00-\\xFF]", "?");
     }
 }
