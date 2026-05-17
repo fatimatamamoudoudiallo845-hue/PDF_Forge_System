@@ -1,5 +1,5 @@
 # ── Étape 1 : Compilation ──────────────────────────────────
-FROM maven:3.9-amazoncorretto-17 AS builder
+FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
 
 COPY corba-server/ corba-server/
@@ -9,12 +9,13 @@ COPY web-gateway/ web-gateway/
 RUN cd web-gateway && mvn package -DskipTests -q
 
 # ── Étape 2 : Image finale ─────────────────────────────────
-FROM amazoncorretto:17
+FROM maven:3.9-eclipse-temurin-17
 WORKDIR /app
 
-# Installer orbd via Java 8
-RUN yum install -y java-1.8.0-amazon-corretto && \
-    yum clean all
+# Installer Java 8 pour orbd
+RUN apt-get update && \
+    apt-get install -y openjdk-8-jdk && \
+    apt-get clean
 
 COPY --from=builder /app/corba-server/target/corba-server-*-jar-with-dependencies.jar corba-server.jar
 COPY --from=builder /app/web-gateway/target/web-gateway-*.jar web-gateway.jar
