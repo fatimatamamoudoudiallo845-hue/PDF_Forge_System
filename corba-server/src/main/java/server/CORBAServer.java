@@ -1,5 +1,4 @@
 package server;
-
 import PDFModule.PDFProcessor;
 import PDFModule.PDFProcessorHelper;
 import org.omg.CORBA.ORB;
@@ -37,14 +36,16 @@ public class CORBAServer {
 
             // Ecrire l'IOR dans un fichier
             String ior = orb.object_to_string(ref);
-            String iorPath = "/root/PDF_Forge_System/PDFProcessor.ior";
+            String iorPath = "/app/PDFProcessor.ior";
+
             try (FileWriter fw = new FileWriter(iorPath)) {
                 fw.write(ior);
             }
+
             System.out.println("[CORBA] IOR ecrit dans : " + iorPath);
             System.out.println("[CORBA] Service pret - En attente de requetes...");
-
             orb.run();
+
         } catch (Exception e) {
             System.err.println("[CORBA] Erreur : " + e.getMessage());
             e.printStackTrace();
