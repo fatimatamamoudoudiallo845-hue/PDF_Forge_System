@@ -1,5 +1,4 @@
 package server;
-import PDFModule.PDFProcessor;
 import PDFModule.PDFProcessorHelper;
 import org.omg.CORBA.ORB;
 import org.omg.PortableServer.POA;
@@ -18,15 +17,13 @@ public class CORBAServer {
             props.put("org.omg.CORBA.ORBSingletonClass", "com.sun.corba.ee.impl.orb.ORBSingleton");
             props.put("org.glassfish.gmbal.NO_MONITORING", "true");
 
-            String[] orbArgs = {
-                "-ORBInitialHost", "localhost",
-                "-ORBInitialPort", "1050"
-            };
-
+            // Sans orbd
+            String[] orbArgs = {};
             ORB orb = ORB.init(orbArgs, props);
             System.out.println("[CORBA] ORB initialise");
 
-            POA rootPOA = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+            POA rootPOA = POAHelper.narrow(
+                orb.resolve_initial_references("RootPOA"));
             rootPOA.the_POAManager().activate();
             System.out.println("[CORBA] POA active");
 
@@ -34,7 +31,7 @@ public class CORBAServer {
             byte[] id = rootPOA.activate_object(impl);
             org.omg.CORBA.Object ref = rootPOA.id_to_reference(id);
 
-            // Ecrire l'IOR dans un fichier
+            // Ecrire l'IOR dans /app/
             String ior = orb.object_to_string(ref);
             String iorPath = "/app/PDFProcessor.ior";
 
