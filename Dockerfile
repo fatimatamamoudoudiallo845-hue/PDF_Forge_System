@@ -11,7 +11,7 @@ COPY web-gateway/ web-gateway/
 RUN cd web-gateway && mvn package -DskipTests -q
 
 # ── Étape 2 : Image finale ─────────────────────────────────
-FROM openjdk:17-jdk-slim
+FROM maven:3.9-eclipse-temurin-17
 WORKDIR /app
 
 COPY --from=builder /app/corba-server/target/corba-server-*-jar-with-dependencies.jar corba-server.jar
