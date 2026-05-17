@@ -42,6 +42,7 @@
             width:7px; height:7px; border-radius:50%;
             background:var(--success); animation:pulse 2s infinite;
         }
+        .dot.error { background:var(--error); animation:none; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
         .container {
@@ -160,7 +161,7 @@
 <header>
     <div class="logo">PDF<span>_</span>FORGE</div>
     <div class="status-badge">
-        <div class="dot"></div>
+        <div class="dot" id="statusDot"></div>
         <span id="statusText">Vérification...</span>
     </div>
 </header>
@@ -174,10 +175,6 @@
     </div>
 
     <div class="quick-action">
-        <a href="/api/pdf/generate-pdf" target="_blank"
-           class="btn" style="width:auto; clip-path:none;">
-            ↓ Générer PDF démo
-        </a>
         <button class="btn btn-outline" style="width:auto"
                 onclick="checkStatus()">⟳ Statut serveur</button>
     </div>
@@ -313,21 +310,26 @@
 
 <footer>
     <span>PDF Forge System · 2026</span>
-    <span>Spring Boot · CORBA 1.8 · PDFBox · OpenPDF</span>
+    <span>Spring Boot · CORBA 1.8 · PDFBox</span>
 </footer>
 
 <script>
 const BASE = '/api/pdf';
 
 async function checkStatus() {
+    const dot  = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    text.textContent = 'Vérification...';
     try {
         const r = await fetch(BASE + '/status');
         const d = await r.json();
-        document.getElementById('statusText').textContent =
-            `Gateway ${d.gateway} · CORBA ${d.corba}`;
-        showToast('✓', `CORBA : ${d.corba}`, false);
+        text.textContent = `Gateway ${d.gateway} · CORBA ${d.corba}`;
+        const ok = d.status === 'healthy';
+        dot.className = ok ? 'dot' : 'dot error';
+        showToast(ok ? '✓' : '✗', `CORBA : ${d.corba}`, !ok);
     } catch {
-        document.getElementById('statusText').textContent = 'Erreur connexion';
+        text.textContent = 'Erreur connexion';
+        dot.className = 'dot error';
         showToast('✗', 'Serveur inaccessible', true);
     }
 }
@@ -356,9 +358,10 @@ async function extractText() {
     try {
         showResult('extractTextResult', 'Extraction en cours...', false);
         const r = await fetch(`${BASE}/extract-text`, { method:'POST', body:form });
+        if (!r.ok) throw new Error('Erreur serveur : ' + r.status);
         const d = await r.json();
         showResult('extractTextResult',
-            `✓ ${d.characters} caractères extraits :\n\n${d.text.substring(0,400)}...`, false);
+            `✓ ${d.characters} caractères extraits :\n\n${d.text.substring(0, 400)}...`, false);
     } catch (e) {
         showResult('extractTextResult', '✗ ' + e.message, true);
     }
@@ -407,9 +410,10 @@ async function convertToImages() {
     try {
         showResult('convertResult', 'Conversion en cours...', false);
         const r = await fetch(`${BASE}/convert-to-images?${params}`, { method:'POST', body:form });
-        const images = await r.json();
-        showResult('convertResult', `✓ ${images.length} image(s) générée(s) en Base64`, false);
-        showToast('✓', images.length + ' images générées', false);
+        if (!r.ok) throw new Error('Erreur serveur : ' + r.status);
+        const d = await r.json();
+        showResult('convertResult', `✓ ${d.count} image(s) générée(s) en Base64`, false);
+        showToast('✓', d.count + ' images générées', false);
     } catch (e) {
         showResult('convertResult', '✗ ' + e.message, true);
     }
@@ -448,7 +452,10 @@ function showToast(icon, msg, isError) {
     setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// Vérification automatique au chargement
 checkStatus();
+// Revérification toutes les 30 secondes
+setInterval(checkStatus, 30000);
 </script>
 </body>
 </html>
