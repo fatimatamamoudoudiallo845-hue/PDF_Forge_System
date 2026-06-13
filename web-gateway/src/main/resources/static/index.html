@@ -7,16 +7,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #1a0000;
-            --surface: #2a0000;
-            --surface2: #3a0000;
-            --accent: #ff2222;
-            --accent2: #ff6b35;
-            --text: #fff0f0;
-            --muted: #aa7777;
-            --border: #5a0000;
-            --success: #4ade80;
-            --error: #ff8888;
+            --bg: #ff0000;
+            --surface: #cc0000;
+            --surface2: #aa0000;
+            --accent: #ffffff;
+            --accent2: #ffff00;
+            --text: #ffffff;
+            --muted: #ffcccc;
+            --border: #dd0000;
+            --success: #00ff88;
+            --error: #ffff00;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
@@ -26,8 +26,8 @@
         body::before {
             content:''; position:fixed; inset:0;
             background-image:
-                linear-gradient(rgba(255,34,34,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,34,34,0.03) 1px, transparent 1px);
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
             background-size:60px 60px; pointer-events:none; z-index:0;
         }
         header {
@@ -35,10 +35,10 @@
             padding:1.2rem 2rem;
             display:flex; align-items:center; justify-content:space-between;
             border-bottom:1px solid var(--border);
-            background:rgba(26,0,0,0.95); backdrop-filter:blur(10px);
+            background:rgba(255,0,0,0.95); backdrop-filter:blur(10px);
         }
         .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.3rem; }
-        .logo span { color:var(--accent); }
+        .logo span { color:#ffff00; }
         .status-badge {
             display:flex; align-items:center; gap:0.5rem;
             font-size:0.7rem; color:var(--muted);
@@ -57,7 +57,7 @@
         .hero { text-align:center; margin-bottom:3rem; }
         .hero-label {
             font-size:0.65rem; text-transform:uppercase;
-            letter-spacing:0.25em; color:var(--accent); margin-bottom:1rem;
+            letter-spacing:0.25em; color:#ffff00; margin-bottom:1rem;
         }
         .hero h1 {
             font-family:'Syne',sans-serif; font-weight:800;
@@ -65,7 +65,7 @@
             line-height:1; letter-spacing:-0.04em; margin-bottom:1rem;
         }
         .hero h1 em {
-            color:transparent; -webkit-text-stroke:1px var(--accent); font-style:normal;
+            color:transparent; -webkit-text-stroke:1px #ffff00; font-style:normal;
         }
         .hero p { color:var(--muted); font-size:0.82rem; line-height:1.7; }
         .quick-action {
@@ -81,9 +81,9 @@
             background:var(--surface); border:1px solid var(--border);
             padding:1.5rem; transition:border-color 0.2s, transform 0.2s;
         }
-        .card:hover { border-color:var(--accent); transform:translateY(-2px); }
+        .card:hover { border-color:#ffff00; transform:translateY(-2px); }
         .card-num {
-            font-size:0.6rem; color:var(--accent);
+            font-size:0.6rem; color:#ffff00;
             text-transform:uppercase; letter-spacing:0.2em; margin-bottom:0.75rem;
         }
         .card h2 {
@@ -102,7 +102,7 @@
             font-family:'IBM Plex Mono',monospace; font-size:0.8rem;
             padding:0.6rem 0.8rem; outline:none; transition:border-color 0.2s;
         }
-        input:focus,textarea:focus { border-color:var(--accent); }
+        input:focus,textarea:focus { border-color:#ffff00; }
         textarea { resize:vertical; min-height:80px; }
         input[type="file"] {
             width:100%; background:var(--surface2);
@@ -110,26 +110,26 @@
             font-family:'IBM Plex Mono',monospace; font-size:0.75rem;
             padding:0.8rem; cursor:pointer;
         }
-        input[type="file"]:hover { border-color:var(--accent); }
+        input[type="file"]:hover { border-color:#ffff00; }
         .btn {
             display:inline-flex; align-items:center; justify-content:center;
-            gap:0.5rem; background:var(--accent); color:#fff;
+            gap:0.5rem; background:#ffffff; color:#ff0000;
             font-family:'Syne',sans-serif; font-weight:700;
             font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;
             padding:0.75rem 1.5rem; border:none; cursor:pointer; width:100%;
             clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
             transition:all 0.2s; text-decoration:none;
         }
-        .btn:hover { background:var(--accent2); transform:translateY(-2px); }
+        .btn:hover { background:#ffff00; color:#ff0000; transform:translateY(-2px); }
         .btn:active { transform:translateY(0); }
         .btn-outline {
-            background:transparent; color:var(--accent);
-            border:1px solid var(--accent); clip-path:none;
+            background:transparent; color:#ffffff;
+            border:1px solid #ffffff; clip-path:none;
         }
-        .btn-outline:hover { background:var(--accent); color:#fff; }
+        .btn-outline:hover { background:#ffffff; color:#ff0000; }
         .result {
             margin-top:1rem; padding:0.75rem;
-            background:var(--surface2); border-left:2px solid var(--accent);
+            background:var(--surface2); border-left:2px solid #ffffff;
             font-size:0.75rem; white-space:pre-wrap; display:none;
         }
         .result.show { display:block; }
@@ -137,7 +137,7 @@
         .result.success { border-color:var(--success); color:var(--success); }
         .toast {
             position:fixed; bottom:2rem; right:2rem;
-            background:var(--surface); border:1px solid var(--accent);
+            background:var(--surface); border:1px solid #ffffff;
             padding:0.8rem 1.2rem; font-size:0.75rem;
             display:flex; align-items:center; gap:0.5rem;
             transform:translateY(120%);
@@ -438,7 +438,7 @@ async function convertToImages() {
             btn.href = img.src;
             btn.download = `page_${i+1}.png`;
             btn.textContent = `↓ Télécharger page ${i+1}`;
-            btn.style.cssText = 'display:block;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;font-size:0.75rem;margin-bottom:1rem;text-decoration:none;';
+            btn.style.cssText = 'display:block;text-align:center;padding:0.4rem;background:#ffffff;color:#ff0000;font-size:0.75rem;margin-bottom:1rem;text-decoration:none;font-weight:bold;';
             container.appendChild(img);
             container.appendChild(btn);
         });
@@ -477,7 +477,7 @@ function showToast(icon, msg, isError) {
     document.getElementById('toastIcon').textContent = icon;
     document.getElementById('toastMsg').textContent  = msg;
     const t = document.getElementById('toast');
-    t.style.borderColor = isError ? 'var(--error)' : 'var(--accent)';
+    t.style.borderColor = isError ? 'var(--error)' : '#ffffff';
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3500);
 }
